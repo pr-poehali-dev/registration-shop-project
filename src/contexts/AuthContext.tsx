@@ -18,35 +18,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    const checkAuth = () => {
+      const savedUser = localStorage.getItem("user");
+      if (savedUser) {
+        try {
+          setUser(JSON.parse(savedUser));
+        } catch (error) {
+          localStorage.removeItem("user");
+        }
+      }
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (phone: string, password: string): Promise<boolean> => {
     setIsLoading(true);
 
-    // Симуляция API запроса
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Симуляция API запроса
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Проверяем существующих пользователей
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const existingUser = users.find(
-      (u: any) => u.phone === phone && u.password === password,
-    );
+      // Проверяем существующих пользователей
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const existingUser = users.find(
+        (u: any) => u.phone === phone && u.password === password,
+      );
 
-    if (existingUser) {
-      const userData = { id: existingUser.id, phone: existingUser.phone };
-      setUser(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
+      if (existingUser) {
+        const userData = { id: existingUser.id, phone: existingUser.phone };
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
+        return true;
+      }
+
+      return false;
+    } finally {
       setIsLoading(false);
-      return true;
     }
-
-    setIsLoading(false);
-    return false;
   };
 
   const register = async (
@@ -55,34 +65,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   ): Promise<boolean> => {
     setIsLoading(true);
 
-    // Симуляция API запроса
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      // Симуляция API запроса
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    // Проверяем, существует ли пользователь
-    const users = JSON.parse(localStorage.getItem("users") || "[]");
-    const existingUser = users.find((u: any) => u.phone === phone);
+      // Проверяем, существует ли пользователь
+      const users = JSON.parse(localStorage.getItem("users") || "[]");
+      const existingUser = users.find((u: any) => u.phone === phone);
 
-    if (existingUser) {
+      if (existingUser) {
+        return false;
+      }
+
+      // Создаем нового пользователя
+      const newUser = {
+        id: Date.now().toString(),
+        phone,
+        password,
+      };
+
+      users.push(newUser);
+      localStorage.setItem("users", JSON.stringify(users));
+
+      const userData = { id: newUser.id, phone: newUser.phone };
+      setUser(userData);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      return true;
+    } finally {
       setIsLoading(false);
-      return false;
     }
-
-    // Создаем нового пользователя
-    const newUser = {
-      id: Date.now().toString(),
-      phone,
-      password,
-    };
-
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-
-    const userData = { id: newUser.id, phone: newUser.phone };
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-
-    setIsLoading(false);
-    return true;
   };
 
   const logout = () => {
